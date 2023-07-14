@@ -1,6 +1,7 @@
-const express = require("express");
-const { Pool } = require("pg");
+import express from "express";
+import pg from "pg";
 
+const { Pool } = pg;
 const app = express();
 const port = 3000;
 
@@ -14,23 +15,20 @@ const pool = new Pool({
 
 app.get("/products", async (req, res) => {
   const start = Date.now();
-
   try {
-    const result = await pool.query(`
-      SELECT p.*, SUM(s.quantity) as total_sales
-      FROM products p
-      JOIN sales s ON p.id = s.product_id
-      GROUP BY p.id
-      ORDER BY total_sales DESC
-      LIMIT 100;
-    `);
+    // Get result from Database
+    const dbResult = await pool.query(`
+          SELECT p.*, SUM(s.quantity) as total_sales
+          FROM products p
+          JOIN sales s ON p.id = s.product_id
+          GROUP BY p.id
+          ORDER BY total_sales DESC
+          LIMIT 10;
+        `);
 
     const duration = Date.now() - start;
     console.log(`Query took ${duration} ms`);
-
-    // TODO: Save result.rows to Redis
-
-    res.json(result.rows);
+    res.json(dbResult.rows);
   } catch (err) {
     console.error(err);
     res
