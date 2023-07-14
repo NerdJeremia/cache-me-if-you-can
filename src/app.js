@@ -1,6 +1,8 @@
-const express = require("express");
-const { Pool } = require("pg");
+import express from "express";
+import pg from "pg";
+import { createClient } from "redis";
 
+const { Pool } = pg;
 const app = express();
 const port = 3000;
 
@@ -12,25 +14,40 @@ const pool = new Pool({
   port: 5432,
 });
 
+const redisClient = createClient();
+
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+
+await redisClient.connect();
+console.log("Connected to Redis");
+
 app.get("/products", async (req, res) => {
   const start = Date.now();
-
   try {
-    const result = await pool.query(`
-      SELECT p.*, SUM(s.quantity) as total_sales
-      FROM products p
-      JOIN sales s ON p.id = s.product_id
-      GROUP BY p.id
-      ORDER BY total_sales DESC
-      LIMIT 100;
-    `);
+    // Try to get the result from Redis first
+    const redisResult = await redisClient.get("products");
+    if (redisResult) {
+      const duration = Date.now() - start;
+      console.log(`Query (cached) took ${duration} ms`);
+      res.json(JSON.parse(redisResult));
+    } else {
+      // If the result does not exist in Redis, query the database
+      const dbResult = await pool.query(`
+          SELECT p.*, SUM(s.quantity) as total_sales
+          FROM products p
+          JOIN sales s ON p.id = s.product_id
+          GROUP BY p.id
+          ORDER BY total_sales DESC
+          LIMIT 10;
+        `);
 
-    const duration = Date.now() - start;
-    console.log(`Query took ${duration} ms`);
+      // Save the database query result to Redis
+      redisClient.setEx("products", 60, JSON.stringify(dbResult.rows));
 
-    // TODO: Save result.rows to Redis
-
-    res.json(result.rows);
+      const duration = Date.now() - start;
+      console.log(`Query (not cached) took ${duration} ms`);
+      res.json(dbResult.rows);
+    }
   } catch (err) {
     console.error(err);
     res
