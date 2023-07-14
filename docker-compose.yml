@@ -1,0 +1,16 @@
+version: "3"
+services:
+  db:
+    image: postgres
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_USER: node_user
+      POSTGRES_PASSWORD: supersecurepassword
+      POSTGRES_DB: node_db
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
