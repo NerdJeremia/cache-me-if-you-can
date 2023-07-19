@@ -3,7 +3,7 @@
 - clone repo
 - run `npm install` to install modules
 - start docker
-- run `docker-compose up -d` to start the postgres and redis containers (takes a while because dummy data is created)
+- run `docker-compose up -d` to start the postgres and redis containers (it takes a while for the dummy data to be created)
 
 # Test uncached query
 - run `npm start` to start the app
