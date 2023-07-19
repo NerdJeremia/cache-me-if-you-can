@@ -1,5 +1,6 @@
 # Setup
 - make sure you have nodejs, docker and docker-compose installed
+- clone repo
 - run `npm install` to install modules
 - start docker
 - run `docker-compose up -d` to start the postgres and redis containers (takes a while because dummy data is created)
